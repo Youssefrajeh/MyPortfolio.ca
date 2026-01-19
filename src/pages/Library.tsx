@@ -25,6 +25,12 @@ const Library: React.FC = () => {
   const [search, setSearch] = useState('');
   const { user, loading: authLoading } = useAuth();
   
+  useEffect(() => {
+    if (user && !authLoading) {
+      fetchBooks();
+    }
+  }, [user, authLoading]);
+
   if (authLoading) {
      return (
        <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -36,10 +42,6 @@ const Library: React.FC = () => {
   if (!user) {
     return <Login />;
   }
-
-  useEffect(() => {
-    fetchBooks();
-  }, []);
 
   const fetchBooks = async () => {
     try {

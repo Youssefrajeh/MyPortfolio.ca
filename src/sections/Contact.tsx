@@ -27,7 +27,8 @@ const Contact: React.FC = () => {
             const response = await fetch('https://formspree.io/f/mvgrongo', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
                 body: JSON.stringify(formData)
             });
@@ -40,9 +41,12 @@ const Contact: React.FC = () => {
                     setStatus('idle');
                 }, 5000);
             } else {
+                const data = await response.json();
+                console.error('Formspree error:', data);
                 setStatus('error');
             }
         } catch (error) {
+            console.error('Submission error:', error);
             setStatus('error');
         }
     };

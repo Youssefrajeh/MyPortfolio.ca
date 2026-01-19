@@ -1,9 +1,8 @@
 import bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
-import { query } from '../config/database.js';
+import User from '../models/User.js';
+import Session from '../models/Session.js';
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS) || 10;
-const SESSION_EXPIRY_HOURS = parseInt(process.env.SESSION_EXPIRY_HOURS) || 24;
 
 // Register new user
 export const register = async (req, res) => {
@@ -20,40 +19,39 @@ export const register = async (req, res) => {
 
   try {
     // Check if user already exists
-    const existingUser = await query(
-      'SELECT id FROM users WHERE username = $1 OR email = $2',
-      [username, email]
-    );
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }]
+    });
 
-    if (existingUser.rows.length > 0) {
+    if (existingUser) {
       return res.status(409).json({ error: 'Username or email already exists' });
     }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    // Insert new user
-    const result = await query(
-      `INSERT INTO users (username, email, password_hash, full_name, role) 
-       VALUES ($1, $2, $3, $4, $5) 
-       RETURNING id, username, email, full_name, role, created_at`,
-      [username, email, passwordHash, fullName || null, 'user']
-    );
-
-    const user = result.rows[0];
+    // Create new user
+    const user = await User.create({
+      username,
+      email,
+      passwordHash,
+      fullName: fullName || null,
+      role: 'user'
+    });
 
     res.status(201).json({
       message: 'User registered successfully',
       user: {
-        id: user.id,
+        id: user._id,
         username: user.username,
         email: user.email,
-        fullName: user.full_name,
+        fullName: user.fullName,
         role: user.role,
       },
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration error:', error.message);
+    console.error('Stack:', error.stack);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -67,59 +65,42 @@ export const login = async (req, res) => {
   }
 
   try {
-    // Find user
-    const result = await query(
-      'SELECT * FROM users WHERE username = $1 AND is_active = true',
-      [username]
-    );
+    // Find user (username or email)
+    const user = await User.findOne({
+      $or: [{ username }, { email: username }],
+      isActive: true
+    });
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const user = result.rows[0];
-
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Create session
-    const sessionToken = uuidv4();
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + SESSION_EXPIRY_HOURS);
-
-    await query(
-      `INSERT INTO sessions (user_id, session_token, expires_at, ip_address, user_agent) 
-       VALUES ($1, $2, $3, $4, $5)`,
-      [
-        user.id,
-        sessionToken,
-        expiresAt,
-        req.ip,
-        req.get('user-agent') || null,
-      ]
+    const session = await Session.createSession(
+      user._id,
+      req.ip,
+      req.get('user-agent') || null
     );
 
     // Update last login
-    await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
-
-    // Log activity
-    await query(
-      'INSERT INTO activity_log (user_id, action, ip_address) VALUES ($1, $2, $3)',
-      [user.id, 'LOGIN', req.ip]
-    );
+    user.lastLogin = new Date();
+    await user.save();
 
     res.json({
       message: 'Login successful',
-      sessionToken,
+      sessionToken: session.sessionToken,
       user: {
-        id: user.id,
+        id: user._id,
         username: user.username,
         email: user.email,
-        fullName: user.full_name,
+        fullName: user.fullName,
         role: user.role,
       },
     });
@@ -139,18 +120,7 @@ export const logout = async (req, res) => {
 
   try {
     // Delete session
-    const result = await query('DELETE FROM sessions WHERE session_token = $1 RETURNING user_id', [
-      sessionToken,
-    ]);
-
-    if (result.rows.length > 0) {
-      // Log activity
-      await query(
-        'INSERT INTO activity_log (user_id, action, ip_address) VALUES ($1, $2, $3)',
-        [result.rows[0].user_id, 'LOGOUT', req.ip]
-      );
-    }
-
+    await Session.deleteOne({ sessionToken });
     res.json({ message: 'Logout successful' });
   } catch (error) {
     console.error('Logout error:', error);
@@ -174,19 +144,19 @@ export const verifySession = async (req, res, next) => {
   const sessionToken = authHeader.substring(7);
 
   try {
-    const result = await query(
-      `SELECT u.id, u.username, u.email, u.full_name, u.role 
-       FROM sessions s 
-       JOIN users u ON s.user_id = u.id 
-       WHERE s.session_token = $1 AND s.expires_at > CURRENT_TIMESTAMP AND u.is_active = true`,
-      [sessionToken]
-    );
+    const user = await Session.validateSession(sessionToken);
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
 
-    req.user = result.rows[0];
+    req.user = {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
+      role: user.role,
+    };
     next();
   } catch (error) {
     console.error('Session verification error:', error);
@@ -201,6 +171,7 @@ export const requireAdmin = (req, res, next) => {
   }
   next();
 };
+
 // Update user profile
 export const updateProfile = async (req, res) => {
   const { username, password } = req.body;
@@ -212,40 +183,37 @@ export const updateProfile = async (req, res) => {
 
   try {
     // Check if new username is taken by another user
-    const existingUser = await query(
-      'SELECT id FROM users WHERE username = $1 AND id != $2',
-      [username, userId]
-    );
+    const existingUser = await User.findOne({
+      username,
+      _id: { $ne: userId }
+    });
 
-    if (existingUser.rows.length > 0) {
+    if (existingUser) {
       return res.status(409).json({ error: 'Username already taken' });
     }
 
-    let queryText;
-    let queryParams;
+    const updateData = { username };
 
     if (password) {
       if (password.length < 8) {
         return res.status(400).json({ error: 'Password must be at least 8 characters long' });
       }
-      const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-      queryText = 'UPDATE users SET username = $1, password_hash = $2 WHERE id = $3 RETURNING id, username, email, full_name, role';
-      queryParams = [username, passwordHash, userId];
-    } else {
-      queryText = 'UPDATE users SET username = $1 WHERE id = $2 RETURNING id, username, email, full_name, role';
-      queryParams = [username, userId];
+      updateData.passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     }
 
-    const result = await query(queryText, queryParams);
-    const user = result.rows[0];
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, select: 'username email fullName role' }
+    );
 
     res.json({
       message: 'Profile updated successfully',
       user: {
-        id: user.id,
+        id: user._id,
         username: user.username,
         email: user.email,
-        fullName: user.full_name,
+        fullName: user.fullName,
         role: user.role,
       },
     });

@@ -1,52 +1,60 @@
-import { query } from '../config/database.js';
+import Book from '../models/Book.js';
+import File from '../models/File.js';
+import User from '../models/User.js';
 
 // Get all books
 export const getAllBooks = async (req, res) => {
-  const { search, author, category, limit = 50, offset = 0 } = req.query;
+  const { search, author, limit = 50, offset = 0 } = req.query;
 
   try {
-    let queryText = `
-      SELECT b.*, 
-             COUNT(DISTINCT f.id) as file_count,
-             COALESCE(SUM(f.file_size), 0) as total_file_size,
-             u.username as created_by_username
-      FROM books b
-      LEFT JOIN files f ON b.id = f.book_id AND f.is_deleted = false
-      LEFT JOIN users u ON b.created_by = u.id
-      WHERE b.is_deleted = false
-    `;
-
-    const params = [];
-    let paramIndex = 1;
+    // Build query
+    const query = { isDeleted: false };
 
     // Add search filter
     if (search) {
-      queryText += ` AND (b.title ILIKE $${paramIndex} OR b.author ILIKE $${paramIndex})`;
-      params.push(`%${search}%`);
-      paramIndex++;
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { author: { $regex: search, $options: 'i' } }
+      ];
     }
 
     // Add author filter
     if (author) {
-      queryText += ` AND b.author ILIKE $${paramIndex}`;
-      params.push(`%${author}%`);
-      paramIndex++;
+      query.author = { $regex: author, $options: 'i' };
     }
 
-    queryText += ` GROUP BY b.id, u.username ORDER BY b.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
+    // Get books with file count
+    const books = await Book.find(query)
+      .populate('createdBy', 'username')
+      .sort({ createdAt: -1 })
+      .skip(parseInt(offset))
+      .limit(parseInt(limit))
+      .lean();
 
-    const result = await query(queryText, params);
+    // Get file counts for each book
+    const booksWithFiles = await Promise.all(
+      books.map(async (book) => {
+        const fileStats = await File.aggregate([
+          { $match: { bookId: book._id, isDeleted: false } },
+          { $group: { _id: null, count: { $sum: 1 }, totalSize: { $sum: '$fileSize' } } }
+        ]);
 
-    // Get total count
-    const countResult = await query(
-      'SELECT COUNT(*) FROM books WHERE is_deleted = false',
-      []
+        return {
+          ...book,
+          id: book._id,
+          file_count: fileStats[0]?.count || 0,
+          total_file_size: fileStats[0]?.totalSize || 0,
+          created_by_username: book.createdBy?.username
+        };
+      })
     );
 
+    // Get total count
+    const total = await Book.countDocuments({ isDeleted: false });
+
     res.json({
-      books: result.rows,
-      total: parseInt(countResult.rows[0].count),
+      books: booksWithFiles,
+      total,
       limit: parseInt(limit),
       offset: parseInt(offset),
     });
@@ -61,34 +69,36 @@ export const getBook = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await query(
-      `SELECT b.*, 
-              u.username as created_by_username,
-              json_agg(
-                json_build_object(
-                  'id', f.id,
-                  'filename', f.filename,
-                  'originalFilename', f.original_filename,
-                  'fileSize', f.file_size,
-                  'mimeType', f.mime_type,
-                  'fileType', f.file_type,
-                  'uploadedAt', f.uploaded_at,
-                  'downloadCount', f.download_count
-                )
-              ) FILTER (WHERE f.id IS NOT NULL) as files
-       FROM books b
-       LEFT JOIN files f ON b.id = f.book_id AND f.is_deleted = false
-       LEFT JOIN users u ON b.created_by = u.id
-       WHERE b.id = $1 AND b.is_deleted = false
-       GROUP BY b.id, u.username`,
-      [id]
-    );
+    const book = await Book.findOne({ _id: id, isDeleted: false })
+      .populate('createdBy', 'username')
+      .lean();
 
-    if (result.rows.length === 0) {
+    if (!book) {
       return res.status(404).json({ error: 'Book not found' });
     }
 
-    res.json({ book: result.rows[0] });
+    // Get files
+    const files = await File.find({ bookId: id, isDeleted: false })
+      .select('filename originalFilename fileSize mimeType fileType uploadedAt downloadCount')
+      .lean();
+
+    res.json({
+      book: {
+        ...book,
+        id: book._id,
+        created_by_username: book.createdBy?.username,
+        files: files.map(f => ({
+          id: f._id,
+          filename: f.filename,
+          originalFilename: f.originalFilename,
+          fileSize: f.fileSize,
+          mimeType: f.mimeType,
+          fileType: f.fileType,
+          uploadedAt: f.uploadedAt,
+          downloadCount: f.downloadCount
+        }))
+      }
+    });
   } catch (error) {
     console.error('Get book error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -104,29 +114,23 @@ export const createBook = async (req, res) => {
   }
 
   try {
-    const result = await query(
-      `INSERT INTO books (title, author, description, isbn, publisher, publication_year, cover_image_url, created_by) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       RETURNING *`,
-      [
-        title,
-        author || null,
-        description || null,
-        isbn || null,
-        publisher || null,
-        publicationYear || null,
-        coverImageUrl || null,
-        req.user.id,
-      ]
-    );
+    const book = await Book.create({
+      title,
+      author: author || null,
+      description: description || null,
+      isbn: isbn || null,
+      publisher: publisher || null,
+      publicationYear: publicationYear || null,
+      coverImageUrl: coverImageUrl || null,
+      createdBy: req.user.id,
+    });
 
-    // Log activity
-    await query(
-      'INSERT INTO activity_log (user_id, action, entity_type, entity_id) VALUES ($1, $2, $3, $4)',
-      [req.user.id, 'CREATE', 'BOOK', result.rows[0].id]
-    );
-
-    res.status(201).json({ book: result.rows[0] });
+    res.status(201).json({
+      book: {
+        ...book.toObject(),
+        id: book._id
+      }
+    });
   } catch (error) {
     console.error('Create book error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -139,32 +143,31 @@ export const updateBook = async (req, res) => {
   const { title, author, description, isbn, publisher, publicationYear, coverImageUrl } = req.body;
 
   try {
-    const result = await query(
-      `UPDATE books 
-       SET title = COALESCE($1, title),
-           author = COALESCE($2, author),
-           description = COALESCE($3, description),
-           isbn = COALESCE($4, isbn),
-           publisher = COALESCE($5, publisher),
-           publication_year = COALESCE($6, publication_year),
-           cover_image_url = COALESCE($7, cover_image_url),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8 AND is_deleted = false
-       RETURNING *`,
-      [title, author, description, isbn, publisher, publicationYear, coverImageUrl, id]
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (author !== undefined) updateData.author = author;
+    if (description !== undefined) updateData.description = description;
+    if (isbn !== undefined) updateData.isbn = isbn;
+    if (publisher !== undefined) updateData.publisher = publisher;
+    if (publicationYear !== undefined) updateData.publicationYear = publicationYear;
+    if (coverImageUrl !== undefined) updateData.coverImageUrl = coverImageUrl;
+
+    const book = await Book.findOneAndUpdate(
+      { _id: id, isDeleted: false },
+      updateData,
+      { new: true }
     );
 
-    if (result.rows.length === 0) {
+    if (!book) {
       return res.status(404).json({ error: 'Book not found' });
     }
 
-    // Log activity
-    await query(
-      'INSERT INTO activity_log (user_id, action, entity_type, entity_id) VALUES ($1, $2, $3, $4)',
-      [req.user.id, 'UPDATE', 'BOOK', id]
-    );
-
-    res.json({ book: result.rows[0] });
+    res.json({
+      book: {
+        ...book.toObject(),
+        id: book._id
+      }
+    });
   } catch (error) {
     console.error('Update book error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -176,23 +179,18 @@ export const deleteBook = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await query(
-      'UPDATE books SET is_deleted = true WHERE id = $1 AND is_deleted = false RETURNING id',
-      [id]
+    const book = await Book.findOneAndUpdate(
+      { _id: id, isDeleted: false },
+      { isDeleted: true },
+      { new: true }
     );
 
-    if (result.rows.length === 0) {
+    if (!book) {
       return res.status(404).json({ error: 'Book not found' });
     }
 
     // Also soft delete associated files
-    await query('UPDATE files SET is_deleted = true WHERE book_id = $1', [id]);
-
-    // Log activity
-    await query(
-      'INSERT INTO activity_log (user_id, action, entity_type, entity_id) VALUES ($1, $2, $3, $4)',
-      [req.user.id, 'DELETE', 'BOOK', id]
-    );
+    await File.updateMany({ bookId: id }, { isDeleted: true });
 
     res.json({ message: 'Book deleted successfully' });
   } catch (error) {

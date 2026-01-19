@@ -6,6 +6,13 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
+import multer from 'multer';
+
+// Load environment variables first
+dotenv.config();
+
+// Import MongoDB connection
+import connectDB from './config/mongodb.js';
 
 // Import routes
 import authRoutes from './routes/auth.js';
@@ -13,8 +20,8 @@ import booksRoutes from './routes/books.js';
 import filesRoutes from './routes/files.js';
 import passport from './config/passport.js';
 
-// Load environment variables
-dotenv.config();
+// Connect to MongoDB
+await connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
