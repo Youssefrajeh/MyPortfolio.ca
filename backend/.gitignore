@@ -1,0 +1,34 @@
+# Environment variables (CRITICAL - DO NOT COMMIT)
+.env
+.env.local
+.env.production
+.env.*.local
+*.env
+
+# Dependencies
+node_modules/
+
+# Uploads (user files)
+uploads/*
+!uploads/.gitkeep
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Sensitive files
+secrets/
+*.pem
+*.key
+*.cert
+config/production.json
