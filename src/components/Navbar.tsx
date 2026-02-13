@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const location = useLocation();
-  const isPortfolioPage = location.pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -26,11 +22,6 @@ const Navbar: React.FC = () => {
     { name: "Projects", href: "#projects" },
     { name: "Contact", href: "#contact" },
   ];
-
-  const handleLogout = async () => {
-    await logout();
-    setMobileMenuOpen(false);
-  };
 
   return (
     <nav
@@ -53,37 +44,18 @@ const Navbar: React.FC = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            {isPortfolioPage ? (
-              <div className="flex items-baseline space-x-8">
-                {portfolioLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.href}
-                    className="text-slate-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:tracking-wider hover:scale-110 transform relative group hover:shadow-[0_0_20px_rgba(96,165,250,0.5)] hover:bg-primary/10"
-                  >
-                    {link.name}
-                    <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full group-hover:shadow-[0_0_10px_rgba(96,165,250,0.8)]"></span>
-                  </a>
-                ))}
-              </div>
-            ) : null}
-
-
-
-            {/* User Menu */}
-            {user && (
-              <div className="flex items-center gap-4">
-                <span className="text-slate-400 text-sm">
-                  {user.username}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-md text-sm font-medium transition-all duration-300"
+            <div className="flex items-baseline space-x-8">
+              {portfolioLinks.map((link) => (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  className="text-slate-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:tracking-wider hover:scale-110 transform relative group hover:shadow-[0_0_20px_rgba(96,165,250,0.5)] hover:bg-primary/10"
                 >
-                  Logout
-                </button>
-              </div>
-            )}
+                  {link.name}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full group-hover:shadow-[0_0_10px_rgba(96,165,250,0.8)]"></span>
+                </a>
+              ))}
+            </div>
           </div>
 
           {/* Mobile menu button */}
@@ -105,7 +77,7 @@ const Navbar: React.FC = () => {
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-2 border-t border-slate-700/50 mt-2">
-            {isPortfolioPage && portfolioLinks.map((link) => (
+            {portfolioLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
@@ -115,22 +87,6 @@ const Navbar: React.FC = () => {
                 {link.name}
               </a>
             ))}
-            
-
-
-            {user && (
-              <>
-                <div className="px-3 py-2 text-slate-400 text-sm">
-                  {user.username}
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-md text-base font-medium transition-all"
-                >
-                  Logout
-                </button>
-              </>
-            )}
           </div>
         )}
       </div>
