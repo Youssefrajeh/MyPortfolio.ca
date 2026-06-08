@@ -1,5 +1,4 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
 
 const experiences = [
     {
@@ -57,61 +56,149 @@ const experiences = [
 ];
 
 const Experience: React.FC = () => {
+    const [isBold, setIsBold] = useState(false);
+    const [isItalic, setIsItalic] = useState(false);
+    const [isUnderline, setIsUnderline] = useState(false);
+    const [fontFamily, setFontFamily] = useState('Times New Roman');
+    const [fontSize, setFontSize] = useState('12');
+    const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
+
+    const pageStyle: React.CSSProperties = {
+        fontFamily: fontFamily === 'MS Sans Serif' ? '"MS Sans Serif", Tahoma, sans-serif' : fontFamily,
+        fontSize: `${fontSize}px`,
+        fontWeight: isBold ? 'bold' : 'normal',
+        fontStyle: isItalic ? 'italic' : 'normal',
+        textDecoration: isUnderline ? 'underline' : 'none',
+        textAlign: align,
+        color: '#000000',
+    };
+
     return (
-        <section id="experience" className="py-20 bg-dark-900 relative">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center mb-16"
+        <div className="flex flex-col h-full bg-[#c0c0c0] text-black text-xs select-text" style={{ minHeight: '350px' }}>
+            {/* WordPad Toolbar */}
+            <div className="win95-raised p-1 border-b-2 border-[#808080] flex flex-wrap items-center gap-1.5 select-none mb-2 text-black">
+                {/* Font Selector */}
+                <select 
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value)}
+                    className="win95-sunken bg-white text-black text-xs px-1 py-0.5 border"
                 >
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">My <span className="text-gradient">Experience</span></h2>
-                    <div className="w-20 h-1 bg-primary mx-auto rounded-full"></div>
-                </motion.div>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="MS Sans Serif">MS Sans Serif</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Courier New">Courier New</option>
+                </select>
 
-                <div className="space-y-12">
-                    {experiences.map((exp, index) => (
-                        <motion.div
-                            key={index}
-                            initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-                            whileInView={{ opacity: 1, x: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6, delay: index * 0.1 }}
-                            className="glass p-8 rounded-2xl hover:border-primary/50 transition-colors duration-300"
-                        >
-                            <div className="flex flex-col md:flex-row justify-between items-center md:items-center mb-6">
-                                <div className="text-center md:text-left">
-                                    <h3 className="text-2xl font-bold text-white mb-2">{exp.title}</h3>
-                                    <p className="text-primary font-medium text-lg">{exp.company}</p>
-                                </div>
-                                <span className="inline-block bg-slate-800 text-slate-300 px-4 py-1 rounded-full text-sm font-medium mt-2 md:mt-0 border border-slate-700">
-                                    {exp.period}
-                                </span>
-                            </div>
+                {/* Font Size Selector */}
+                <select 
+                    value={fontSize}
+                    onChange={(e) => setFontSize(e.target.value)}
+                    className="win95-sunken bg-white text-black text-xs px-1 py-0.5 border w-12"
+                >
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="14">14</option>
+                    <option value="16">16</option>
+                    <option value="18">18</option>
+                </select>
 
-                            <ul className="space-y-3 mb-6">
-                                {exp.description.map((item, i) => (
-                                    <li key={i} className="flex items-start text-slate-300 text-center md:text-left">
-                                        <span className="mr-3 text-primary mt-1.5 hidden md:inline">•</span>
-                                        <span>{item}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                {/* Separator vertical */}
+                <div className="w-[1px] h-[16px] bg-[#808080] border-r border-white mx-0.5" />
 
-                            <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                {exp.tech.map((tech, i) => (
-                                    <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm border border-primary/20">
-                                        {tech}
+                {/* B, I, U buttons */}
+                <button 
+                    onClick={() => setIsBold(!isBold)}
+                    className={`win95-button w-6 h-6 flex items-center justify-center p-0 font-bold border-2 ${isBold ? 'win95-button-pressed font-black' : ''}`}
+                    title="Bold"
+                >
+                    B
+                </button>
+                <button 
+                    onClick={() => setIsItalic(!isItalic)}
+                    className={`win95-button w-6 h-6 flex items-center justify-center p-0 italic border-2 ${isItalic ? 'win95-button-pressed' : ''}`}
+                    title="Italic"
+                >
+                    I
+                </button>
+                <button 
+                    onClick={() => setIsUnderline(!isUnderline)}
+                    className={`win95-button w-6 h-6 flex items-center justify-center p-0 underline border-2 ${isUnderline ? 'win95-button-pressed' : ''}`}
+                    title="Underline"
+                >
+                    U
+                </button>
+
+                {/* Separator vertical */}
+                <div className="w-[1px] h-[16px] bg-[#808080] border-r border-white mx-0.5" />
+
+                {/* Alignments */}
+                <button 
+                    onClick={() => setAlign('left')}
+                    className={`win95-button w-6 h-6 flex items-center justify-center p-0 border-2 ${align === 'left' ? 'win95-button-pressed' : ''}`}
+                    title="Align Left"
+                >
+                    ▤
+                </button>
+                <button 
+                    onClick={() => setAlign('center')}
+                    className={`win95-button w-6 h-6 flex items-center justify-center p-0 border-2 ${align === 'center' ? 'win95-button-pressed' : ''}`}
+                    title="Align Center"
+                >
+                    ▥
+                </button>
+                <button 
+                    onClick={() => setAlign('right')}
+                    className={`win95-button w-6 h-6 flex items-center justify-center p-0 border-2 ${align === 'right' ? 'win95-button-pressed' : ''}`}
+                    title="Align Right"
+                >
+                    ▥
+                </button>
+            </div>
+
+            {/* WordPad Paper Sheet Page Container */}
+            <div className="flex-1 overflow-auto bg-[#808080] p-4 flex justify-center">
+                <div 
+                    style={pageStyle} 
+                    className="w-full max-w-[800px] bg-white p-8 shadow-md border border-black min-h-[500px] select-text"
+                >
+                    <h1 className="text-2xl font-bold border-b border-black pb-2 mb-6">RESUME - WORK EXPERIENCE</h1>
+                    
+                    <div className="space-y-6">
+                        {experiences.map((exp, index) => (
+                            <div key={index} className="border-b border-[#dfdfdf] pb-4 last:border-0 last:pb-0">
+                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2">
+                                    <div>
+                                        <h2 className="text-base font-bold text-black">{exp.title}</h2>
+                                        <h3 className="text-xs text-[#000080] font-semibold">{exp.company}</h3>
+                                    </div>
+                                    <span className="text-[11px] text-gray-600 bg-gray-100 border border-gray-300 px-2 py-0.5 rounded font-mono mt-1 sm:mt-0">
+                                        {exp.period}
                                     </span>
-                                ))}
+                                </div>
+                                
+                                <ul className="list-disc pl-5 space-y-1 mt-2 text-xs leading-relaxed text-gray-800">
+                                    {exp.description.map((item, i) => (
+                                        <li key={i} className="pl-1">
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                <div className="flex flex-wrap gap-1.5 mt-3 select-none">
+                                    <span className="font-bold text-[10px] text-gray-700 mr-1 self-center">Skills used:</span>
+                                    {exp.tech.map((tech, i) => (
+                                        <span key={i} className="text-[10px] bg-[#dfdfdf] border border-[#808080] px-1.5 py-0.5 text-black">
+                                            {tech}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
-                        </motion.div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
-        </section>
+        </div>
     );
 };
 

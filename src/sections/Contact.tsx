@@ -1,7 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { FaEnvelope, FaLinkedin, FaGithub, FaMapMarkerAlt, FaPhone } from 'react-icons/fa';
-import Button from '../components/Button';
 
 const Contact: React.FC = () => {
     const [formData, setFormData] = useState({
@@ -30,19 +27,17 @@ const Contact: React.FC = () => {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    name: formData.name,
+                    _replyto: formData.email,
+                    subject: formData.subject,
+                    message: `Sender Email: ${formData.email}\nSender Name: ${formData.name}\n\nMessage:\n${formData.message}`
+                })
             });
 
             if (response.ok) {
                 setStatus('success');
-                // Reset form after 5 seconds
-                setTimeout(() => {
-                    setFormData({ name: '', email: '', subject: '', message: '' });
-                    setStatus('idle');
-                }, 5000);
             } else {
-                const data = await response.json();
-                console.error('Formspree error:', data);
                 setStatus('error');
             }
         } catch (error) {
@@ -51,175 +46,225 @@ const Contact: React.FC = () => {
         }
     };
 
+    const resetForm = () => {
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        setStatus('idle');
+    };
+
     return (
-        <section id="contact" className="py-20 bg-dark-950 relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center mb-16"
-                >
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">Get In <span className="text-gradient">Touch</span></h2>
-                    <div className="w-20 h-1 bg-primary mx-auto rounded-full"></div>
-                </motion.div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
+        <div className="flex flex-col md:flex-row gap-3 bg-[#c0c0c0] text-black font-sans text-xs select-none" style={{ minHeight: '380px' }}>
+            
+            {/* Left Column: Outlook Composer */}
+            <div className="flex-1 flex flex-col gap-2 win95-raised p-2 border-2">
+                {/* Top Toolbar */}
+                <div className="flex items-center gap-1.5 border-b border-[#808080] pb-2 select-none">
+                    <button
+                        onClick={handleSubmit}
+                        disabled={status === 'submitting' || !formData.email || !formData.message}
+                        className="win95-button flex flex-col items-center gap-1 px-3 py-1 font-bold border-2"
+                        title="Send Message"
                     >
-                        <h3 className="text-2xl font-bold text-white mb-6 text-center md:text-left">Let's Connect</h3>
-                        <p className="text-slate-300 mb-8 text-lg leading-relaxed text-center md:text-left">
-                            I'm currently looking for new opportunities. Whether you have a question or just want to say hi, I'll try my best to get back to you!
-                        </p>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-4 text-slate-300 justify-center md:justify-start">
-                                <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-primary text-xl">
-                                    <FaEnvelope />
-                                </div>
-                                <div className="text-center md:text-left">
-                                    <p className="text-sm text-slate-500">Email</p>
-                                    <a href="mailto:youssefrrajeh@gmail.com" className="hover:text-primary transition-colors">youssefrrajeh@gmail.com</a>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 text-slate-300 justify-center md:justify-start">
-                                <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-primary text-xl">
-                                    <FaPhone />
-                                </div>
-                                <div className="text-center md:text-left">
-                                    <p className="text-sm text-slate-500">Phone</p>
-                                    <a href="tel:+15483884360" className="hover:text-primary transition-colors">+1 (548) 388-4360</a>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-4 text-slate-300 justify-center md:justify-start">
-                                <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-primary text-xl">
-                                    <FaMapMarkerAlt />
-                                </div>
-                                <div className="text-center md:text-left">
-                                    <p className="text-sm text-slate-500">Location</p>
-                                    <p>London, Ontario, Canada</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex gap-4 mt-8 justify-center md:justify-start">
-                            <a href="https://github.com/Youssefrajeh" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-primary hover:text-white transition-all duration-300">
-                                <FaGithub size={20} />
-                            </a>
-                            <a href="https://www.linkedin.com/in/youssefrajeh" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 hover:bg-primary hover:text-white transition-all duration-300">
-                                <FaLinkedin size={20} />
-                            </a>
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.6 }}
-                        className="glass p-8 rounded-2xl"
+                        <span className="text-lg">✉️</span>
+                        <span>Send</span>
+                    </button>
+                    <button
+                        onClick={resetForm}
+                        className="win95-button flex flex-col items-center gap-1 px-3 py-1 font-bold border-2"
+                        title="Reset Form"
                     >
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label htmlFor="name" className="block text-sm font-medium text-slate-400 mb-2">Name</label>
-                                    <input 
-                                        type="text" 
-                                        id="name" 
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                                        placeholder="John Doe" 
-                                    />
-                                </div>
-                                <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-slate-400 mb-2">Email</label>
-                                    <input 
-                                        type="email" 
-                                        id="email" 
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        required
-                                        className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                                        placeholder="john@example.com" 
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label htmlFor="subject" className="block text-sm font-medium text-slate-400 mb-2">Subject</label>
-                                <input 
-                                    type="text" 
-                                    id="subject" 
-                                    value={formData.subject}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                                    placeholder="Project Inquiry" 
-                                />
-                            </div>
-                            <div>
-                                <label htmlFor="message" className="block text-sm font-medium text-slate-400 mb-2">Message</label>
-                                <textarea 
-                                    id="message" 
-                                    rows={4} 
-                                    value={formData.message}
-                                    onChange={handleChange}
-                                    required
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" 
-                                    placeholder="Your message..."
-                                ></textarea>
-                            </div>
-                            
-                            {status === 'success' && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="bg-gradient-to-r from-primary/20 to-secondary/20 border-2 border-primary rounded-xl p-6 text-center"
+                        <span className="text-lg">❌</span>
+                        <span>Clear</span>
+                    </button>
+                </div>
+
+                {/* Form Header Fields */}
+                <form onSubmit={handleSubmit} className="space-y-2 mt-1 flex-1 flex flex-col">
+                    {/* To Field */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-14 font-semibold text-right text-gray-700">To:</span>
+                        <div className="flex-1 win95-sunken bg-[#dfdfdf] border px-2 py-1 select-text font-mono text-[11px] truncate">
+                            📬 youssefrrajeh@gmail.com
+                        </div>
+                    </div>
+
+                    {/* From / Sender Name Field */}
+                    <div className="flex items-center gap-1.5">
+                        <label htmlFor="name" className="w-14 font-semibold text-right text-gray-700">Name:</label>
+                        <input
+                            type="text"
+                            id="name"
+                            required
+                            value={formData.name}
+                            onChange={handleChange}
+                            placeholder="Your Name"
+                            className="flex-1 win95-sunken bg-white border px-2 py-1 text-black text-xs select-text focus:outline-none"
+                        />
+                    </div>
+
+                    {/* From / Sender Email Field */}
+                    <div className="flex items-center gap-1.5">
+                        <label htmlFor="email" className="w-14 font-semibold text-right text-gray-700">From:</label>
+                        <input
+                            type="email"
+                            id="email"
+                            required
+                            value={formData.email}
+                            onChange={handleChange}
+                            placeholder="your.email@example.com"
+                            className="flex-1 win95-sunken bg-white border px-2 py-1 text-black text-xs select-text focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Subject Field */}
+                    <div className="flex items-center gap-1.5">
+                        <label htmlFor="subject" className="w-14 font-semibold text-right text-gray-700">Subject:</label>
+                        <input
+                            type="text"
+                            id="subject"
+                            required
+                            value={formData.subject}
+                            onChange={handleChange}
+                            placeholder="Project Proposal / Greeting"
+                            className="flex-1 win95-sunken bg-white border px-2 py-1 text-black text-xs select-text focus:outline-none"
+                        />
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-[1px] bg-[#808080] border-b border-white my-1" />
+
+                    {/* Message Body Field */}
+                    <div className="flex-1 flex flex-col">
+                        <textarea
+                            id="message"
+                            required
+                            rows={6}
+                            value={formData.message}
+                            onChange={handleChange}
+                            placeholder="Type your email message here..."
+                            className="w-full flex-1 win95-sunken bg-white border p-2 text-black text-xs select-text focus:outline-none resize-none min-h-[150px]"
+                        />
+                    </div>
+                </form>
+            </div>
+
+            {/* Right Column: Address Book / Business Card */}
+            <div className="w-full md:w-56 flex flex-col gap-2 win95-raised p-2 border-2 select-none">
+                <div className="font-bold border-b border-[#808080] pb-1 text-[11px] text-[#000080]">
+                    📇 Address Book Card
+                </div>
+                <div className="win95-sunken bg-white p-3 border-2 flex-1 flex flex-col gap-3">
+                    <div>
+                        <h3 className="font-bold text-sm text-black">Youssef Rajeh</h3>
+                        <p className="text-[10px] text-gray-600">Software Developer</p>
+                    </div>
+
+                    <div className="h-[1px] bg-[#dfdfdf] my-1" />
+
+                    {/* Contact items */}
+                    <div className="space-y-2 text-[10px]">
+                        <div>
+                            <span className="font-semibold text-gray-700 block">📞 Phone:</span>
+                            <a href="tel:+15483884360" className="text-blue-800 hover:underline select-text font-mono">+1 (548) 388-4360</a>
+                        </div>
+                        <div>
+                            <span className="font-semibold text-gray-700 block">📍 Location:</span>
+                            <span className="select-text font-sans">London, Ontario, Canada</span>
+                        </div>
+                        <div>
+                            <span className="font-semibold text-gray-700 block">🌐 Links:</span>
+                            <div className="flex flex-col gap-1 mt-1">
+                                <a 
+                                    href="https://github.com/Youssefrajeh" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="win95-button py-0.5 px-2 text-center text-[9px] hover:no-underline font-bold border-2"
                                 >
-                                    <motion.div
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ delay: 0.2, type: "spring" }}
-                                        className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4"
-                                    >
-                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </motion.div>
-                                    <h3 className="text-2xl font-bold text-white mb-2">Thank You!</h3>
-                                    <p className="text-slate-300">
-                                        Your message has been sent successfully. I'll get back to you as soon as possible!
-                                    </p>
-                                </motion.div>
-                            )}
-
-                            {status === 'error' && (
-                                <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-3 rounded-lg">
-                                    ✗ Something went wrong. Please try again or email me directly.
-                                </div>
-                            )}
-                            
-                            <Button 
-                                type="submit" 
-                                variant="primary" 
-                                className="w-full"
-                                disabled={status === 'submitting'}
-                            >
-                                {status === 'submitting' ? 'Sending...' : 'Send Message'}
-                            </Button>
-                        </form>
-                    </motion.div>
+                                    💻 GitHub Profile
+                                </a>
+                                <a 
+                                    href="https://www.linkedin.com/in/youssefrajeh" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="win95-button py-0.5 px-2 text-center text-[9px] hover:no-underline font-bold border-2"
+                                >
+                                    🔗 LinkedIn Network
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </section>
+
+            {/* Success Modal Dialogue */}
+            {status === 'success' && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 pointer-events-auto">
+                    <div className="win95-raised p-1 w-[320px] flex flex-col border-2 select-none text-black">
+                        {/* Title Bar */}
+                        <div className="flex items-center justify-between p-1 bg-gradient-to-r from-[#000080] to-[#1084d0] text-white font-bold text-xs">
+                            <span className="flex items-center gap-1.5">ℹ️ Outlook Express</span>
+                            <button 
+                                onClick={resetForm}
+                                className="win95-button w-4 h-4 p-0 text-xs font-bold leading-none flex items-center justify-center"
+                            >
+                                X
+                            </button>
+                        </div>
+                        {/* Body */}
+                        <div className="p-4 bg-[#c0c0c0] flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl">🛈</span>
+                                <div className="text-xs font-semibold">
+                                    Your message was sent successfully to Youssef Rajeh. Thank you!
+                                </div>
+                            </div>
+                            <div className="flex justify-end select-none">
+                                <button
+                                    onClick={resetForm}
+                                    className="win95-button text-xs font-semibold py-1 px-4 border-2"
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Error Modal Dialogue */}
+            {status === 'error' && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 pointer-events-auto">
+                    <div className="win95-raised p-1 w-[320px] flex flex-col border-2 select-none text-black">
+                        {/* Title Bar */}
+                        <div className="flex items-center justify-between p-1 bg-gradient-to-r from-[#000080] to-[#1084d0] text-white font-bold text-xs">
+                            <span className="flex items-center gap-1.5">⚠️ Error</span>
+                            <button 
+                                onClick={() => setStatus('idle')}
+                                className="win95-button w-4 h-4 p-0 text-xs font-bold leading-none flex items-center justify-center"
+                            >
+                                X
+                            </button>
+                        </div>
+                        {/* Body */}
+                        <div className="p-4 bg-[#c0c0c0] flex flex-col gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl text-red-600">🛑</span>
+                                <div className="text-xs font-semibold">
+                                    Message failed to send. Please verify your internet connection or email directly.
+                                </div>
+                            </div>
+                            <div className="flex justify-end select-none">
+                                <button
+                                    onClick={() => setStatus('idle')}
+                                    className="win95-button text-xs font-semibold py-1 px-4 border-2"
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

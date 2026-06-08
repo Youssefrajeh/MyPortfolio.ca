@@ -1,48 +1,48 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import Button from '../components/Button';
-import { FaDownload } from 'react-icons/fa';
+import React, { useState } from 'react';
 
 const About: React.FC = () => {
+    const initialText = `ABOUT ME
+=========
+I am a dedicated software developer with a unique background in Applied Chemistry and extensive experience in quality control, production management, and team leadership. Currently pursuing an Advanced Diploma in Computer Programming and Analysis at Fanshawe College with an impressive 3.9 GPA.
+
+PROFESSIONAL JOURNEY
+--------------------
+My diverse professional journey spans over 15 years in the chemical and manufacturing industries across Syria and Cameroon, where I developed strong analytical thinking, problem-solving skills, and attention to detail. These transferable skills now drive my passion for creating efficient, scalable software solutions.
+
+LANGUAGES SPOKEN
+----------------
+* English: Fluent (C2)
+* French: Conversational (B1)
+* Arabic: Native
+
+CONTACT INFO
+------------
+Location: London, Ontario, Canada
+Email: youssefrrajeh@gmail.com
+Phone: +1 (548) 388-4360`;
+
+    const [text, setText] = useState(initialText);
+
     return (
-        <section id="about" className="py-20 bg-dark-950 relative overflow-hidden">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center mb-12"
+        <div className="flex flex-col h-full font-mono text-black text-xs select-text" style={{ minHeight: '300px' }}>
+            <textarea 
+                className="w-full flex-1 p-2 border-none outline-none resize-none font-mono text-xs select-text focus:ring-0 bg-white text-black"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                spellCheck={false}
+            />
+            {/* Status Bar */}
+            <div className="flex justify-between items-center mt-1 pt-1.5 px-2 bg-[#c0c0c0] win95-sunken-gray py-1 border-2">
+                <span className="text-[10px] text-gray-700 font-sans">For Help, press F1</span>
+                <a 
+                  href="/Youssef Rajeh.pdf" 
+                  download 
+                  className="win95-button text-xs font-semibold py-0.5 px-3 text-black border-2 flex items-center gap-1 hover:no-underline"
                 >
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">About <span className="text-gradient">Me</span></h2>
-                    <div className="w-20 h-1 bg-primary mx-auto rounded-full"></div>
-                </motion.div>
-
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="glass p-8 rounded-2xl shadow-xl"
-                >
-                    <p className="text-lg text-slate-300 mb-6 leading-relaxed text-center">
-                        I am a dedicated software developer with a unique background in Applied Chemistry and extensive experience in quality control, production management, and team leadership. Currently pursuing an Advanced Diploma in Computer Programming and Analysis at Fanshawe College with an impressive 3.9 GPA.
-                    </p>
-                    <p className="text-lg text-slate-300 mb-6 leading-relaxed text-center">
-                        My diverse professional journey spans over 15 years in the chemical and manufacturing industries across Syria and Cameroon, where I developed strong analytical thinking, problem-solving skills, and attention to detail. These transferable skills now drive my passion for creating efficient, scalable software solutions.
-                    </p>
-                    <p className="text-lg text-slate-300 mb-8 leading-relaxed text-center">
-                        Fluent in English (C2), French (B1), and Arabic (Native), I bring a multicultural perspective and proven ability to work effectively in diverse, international environments.
-                    </p>
-
-                    <div className="text-center">
-                        <Button href="/Youssef Rajeh.pdf" variant="primary" className="gap-2">
-                            <FaDownload /> Download CV
-                        </Button>
-                    </div>
-                </motion.div>
+                  💾 Save & Download CV
+                </a>
             </div>
-        </section>
+        </div>
     );
 };
 
