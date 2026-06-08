@@ -64,7 +64,7 @@ const Experience: React.FC = () => {
     const [align, setAlign] = useState<'left' | 'center' | 'right'>('left');
 
     const pageStyle: React.CSSProperties = {
-        fontFamily: fontFamily === 'MS Sans Serif' ? '"MS Sans Serif", Tahoma, sans-serif' : fontFamily,
+        fontFamily: fontFamily === 'MS Sans Serif' ? '"R95 Sans Serif 8pt", "MS Sans Serif", Tahoma, sans-serif' : fontFamily,
         fontSize: `${fontSize}px`,
         fontWeight: isBold ? 'bold' : 'normal',
         fontStyle: isItalic ? 'italic' : 'normal',

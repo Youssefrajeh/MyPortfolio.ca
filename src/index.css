@@ -1,4 +1,4 @@
-@import url('https://fonts.cdnfonts.com/css/ms-sans-serif');
+@import "@react95/fonts/sans-serif/8pt";
 @import "tailwindcss";
 
 :root {
@@ -15,8 +15,9 @@ html, body {
   padding: 0;
   height: 100%;
   overflow: hidden;
-  font-family: 'MS Sans Serif', Tahoma, Geneva, Arial, sans-serif;
+  font-family: 'R95 Sans Serif 8pt', 'MS Sans Serif', Tahoma, Geneva, Arial, sans-serif;
   font-size: 13px;
+  -webkit-font-smoothing: none;
   background-color: var(--win95-teal);
   color: #000000;
   user-select: none;
